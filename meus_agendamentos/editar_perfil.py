@@ -1,23 +1,35 @@
 import streamlit as st
 
-def main():
-    st.markdown("""<h1 style='text-align: center;margin-top:-50px;margin-bottom: 80px; color: white;'>App Name</h1>
+st.markdown("<h1 style='text-align: center;margin-top:-50px;margin-bottom: 80px; color: white;'>App Name</h1>", unsafe_allow_html=True)
+
+with st.container():
+    st.markdown(
+        """
         <style>
-        body {
-            background-color: red;
-        }
+            body {
+                background-color: red;
+            }
+            h2 {
+                text-align: center;
+                margin-top: -50px;
+                margin-bottom: 80px;
+                color: white;
+            }
         </style>
-    """, unsafe_allow_html=True)
-    st.title("Editar Perfil")
-    nome = st.text_input("Nome:")
-    email = st.text_input("Email:")
-    senha = st.text_input("Senha:",type="password")
-    senha_denovo=st.text_input("Digite a senha de novo:",type="password")
-    if st.button("Salvar Alterações") and senha_denovo==senha:
-        # Exiba os detalhes do perfil após salvar
-        st.success(f"Perfil Atualizado:\n\nNome: {nome} \n\nEmail: {email} \n\n Senha: {senha}")
+        <form action="/editar_perfil" method="post">
+            <h2>Editar Perfil</h2>
+            <label for="nome">Nome:</label>
+            <input type="text" id="nome" name="nome"><br>
+            
+            <label for="email">Email:</label>
+            <input type="text" id="email" name="email"><br>
+            
+            <label for="senha">Senha:</label>
+            <input type="password" id="senha" name="senha"><br>
 
-if __name__ == "__main__":
-    main()
-
+            <input type="submit" value="Salvar Alterações">
+        </form>
+        """
+        , unsafe_allow_html=True
+    )
 
