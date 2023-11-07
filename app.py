@@ -140,31 +140,32 @@ def listar_aquarios(predio):
         if resposta.status_code == 200:
             lista1 = []
             lista2 = []
-            for agendamento in data['usuario']['agendamentos']:
-                lista1.append(f'Data: {agendamento["agendamento"].split("-")[0]}; Hora: das {agendamento["agendamento"].split("-")[1].split("_")[0]}hrs até as {agendamento["agendamento"].split("-")[1].split("_")[1]}hrs')
-                lista2.append(f'Nome: {agendamento["aquario"]["nome"]}; Local: {agendamento["aquario"]["local"]}; id: {agendamento["aquario"]["_id"]}')
+            if 'agendamentos' in data['usuario']:
+                for agendamento in data['usuario']['agendamentos']:
+                    lista1.append(f'Data: {agendamento["agendamento"].split("-")[0]}; Hora: das {agendamento["agendamento"].split("-")[1].split("_")[0]}hrs até as {agendamento["agendamento"].split("-")[1].split("_")[1]}hrs')
+                    lista2.append(f'Nome: {agendamento["aquario"]["nome"]}; Local: {agendamento["aquario"]["local"]}; id: {agendamento["aquario"]["_id"]}')
 
             if not lista1:
                 st.write('sem agendamentos')
             else:
                 agendamento_escolhido = st.radio('Agendamentos:',options=lista1, captions=lista2)
 
-            if st.button("Deletar Agendamento"):
-                id_aquario = lista2[lista1.index(agendamento_escolhido)].split(';')[2][4:]
-                st.write(id_aquario)
-                deletado = data['usuario']['agendamentos'][lista1.index(agendamento_escolhido)]
-                del data['usuario']['agendamentos'][lista1.index(agendamento_escolhido)]
-                del data['usuario']['_id']
-                if requests.put(f'{API}/usuarios/{st.session_state.id_usuario}', json=data).status_code == 200:
+            # if st.button("Deletar Agendamento"):
+            #     id_aquario = lista2[lista1.index(agendamento_escolhido)].split(';')[2][4:]
+            #     st.write(id_aquario)
+            #     deletado = data['usuario']['agendamentos'][lista1.index(agendamento_escolhido)]
+            #     del data['usuario']['agendamentos'][lista1.index(agendamento_escolhido)]
+            #     del data['usuario']['_id']
+            #     if requests.put(f'{API}/usuarios/{st.session_state.id_usuario}', json=data).status_code == 200:
 
-                    print('oi')
-                    resposta = requests.get(f'{API}/aquarios/{id_aquario}')
-                    if resposta.status_code == 200:
-                        data = resposta.json()
-                        data['aquario']['agendamentos'].remove(deletado)
-                        del data['aquario']['_id']
-                        if requests.put(f'{API}/aquarios/{id_aquario}', json=data).status_code == 200:
-                            st.success('deletado com sucesso')
+            #         print('oi')
+            #         resposta = requests.get(f'{API}/aquarios/{id_aquario}')
+            #         if resposta.status_code == 200:
+            #             data = resposta.json()
+            #             data['aquario']['agendamentos'].remove(deletado)
+            #             del data['aquario']['_id']
+            #             if requests.put(f'{API}/aquarios/{id_aquario}', json=data).status_code == 200:
+            #                 st.success('deletado com sucesso')
 
 def menu_predio():
     st.sidebar.title("Menu")
