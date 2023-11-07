@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 from constantes import *
+from datetime import datetime
 
 #login caso ja tenha cadastro
 def login():
@@ -102,6 +103,22 @@ def aquarios_admin():
                 st.experimental_rerun()
             else:
                 st.error(resposta.json()['erro'])
+
+def verifica_agendamento(entrada_horario):
+        
+    data, hora = entrada_horario.split('-')
+    data_desejada = datetime.strptime(data, "%d/%m/%Y").date()
+    data_atual = datetime.now().date()
+    if data_desejada < data_atual:
+        return True
+        
+    elif data_desejada == data_atual:
+        hora_desejada = datetime.strptime(hora, "%H_%M").time()
+        hora_atual = datetime.now().time()
+        if hora_desejada <= hora_atual:
+            return True
+    return False
+
 
 def menu_admin():
     st.sidebar.title("Menu")
