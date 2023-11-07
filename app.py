@@ -36,6 +36,27 @@ def cadastro():
             st.experimental_rerun()
         else:
             st.error(resposta.json()['erro'])
+
+def tela_edicao():
+    st.title("Editar Cadastro")
+
+    usuario_atual = st.session_state.usuario_atual
+
+    nome_completo = st.text_input("Nome Completo", value=usuario_atual.get('nome', ''))
+    novo_email = st.text_input("Email", value=usuario_atual.get('email', ''))
+    nova_senha = st.text_input("Nova Senha", type="password")
+
+    if st.button("Salvar Alterações"):
+        dados_usuario = {"nome": nome_completo, "email": novo_email, "senha": nova_senha}
+        resposta = requests.put(f'{API}/usuarios/{usuario_atual["id"]}', json=dados_usuario)
+
+        if resposta.status_code == 200:
+            st.success("Cadastro atualizado com sucesso!")
+            st.experimental_rerun()
+        else:
+            st.error(resposta.json().get('erro', 'Erro desconhecido'))
+
+
         
 def menu_login_cadastro():
     st.sidebar.title("Menu")
