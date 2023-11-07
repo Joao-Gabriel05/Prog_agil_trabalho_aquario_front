@@ -1,6 +1,8 @@
 import streamlit as st
 import requests
 from constantes import *
+from datetime import datetime
+from functions import *
 
 #login caso ja tenha cadastro
 def login():
@@ -15,6 +17,7 @@ def login():
             if email == "admin@admin":
                 st.session_state.admin = True
             st.success("Login bem-sucedido!")
+            st.session_state.id_usuario = resposta.json()['sucesso']
             st.session_state.logado = True
             st.experimental_rerun()
         else:
@@ -33,6 +36,7 @@ def cadastro():
         if resposta.status_code == 201:
             st.success("Conta criada com sucesso!")
             st.session_state.logado = True
+            st.session_state.id_usuario = resposta.json()['sucesso']
             st.experimental_rerun()
         else:
             st.error(resposta.json()['erro'])
@@ -47,17 +51,62 @@ def menu_login_cadastro():
         cadastro()
 
 def listar_aquarios(predio):
+    st.title('Selecione o aquario para agendar')
+
     resposta = requests.get(f'{API}/aquarios')
     data = resposta.json()
     if resposta.status_code == 200:
+        lista1 = []
+        lista2 = []
         for aquario in data['aquarios']:
-            with st.container():
-                if 'img' in aquario:
-                    st.image('https://images.unsplash.com/photo-1548407260-da850faa41e3?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1487&q=80')
-                st.button(f"Nome: {aquario['nome']} Local: {aquario['local']}")
-    else:
-        st.error(data['erro'])
-    
+            if predio in aquario['local']:
+                lista1.append(f'Nome: {aquario["nome"]}; Local: {aquario["local"]}')
+                lista2.append(aquario["_id"])
+
+        if not lista1:
+            st.write('sem aquarios disponiveis')
+        else:
+            aquario_ecolhido = st.radio('Aquarios:',options=lista1, captions=lista2)
+
+            # Obtendo a data atual
+            data_atual = datetime.now().date()
+
+            # Encontrando o próximo dia útil após dois dias a partir da data atual
+            data_dia_util = proximo_dia_util(data_atual)
+
+            # Widget para seleção de data a partir do dia útil encontrado
+            dia = st.date_input("Selecione uma data", min_value=data_atual, max_value=data_dia_util)
+
+            resposta = requests.get(f'{API}/aquarios/{lista2[lista1.index(aquario_ecolhido)]}')
+            json = resposta.json()
+
+            horarios_ocupados = []
+
+            if 'agendamentos' in json['aquario']:
+                for agendamento in json['aquario']['agendamentos']:
+                    horarios_ocupados.append(datetime.strptime(f"{agendamento.split('-')[1][:2]}:00", "%H:%M").time())
+
+                # Horários já ocupados (simulados para o exemplo)
+                # horarios_ocupados = [datetime.strptime("13:00", "%H:%M").time(), datetime.strptime("16:30", "%H:%M").time()]
+
+            # Obtendo o próximo horário disponível
+            horario_disponivel = hora_disponivel(horarios_ocupados)
+
+            # Widget para seleção de horário a partir do próximo horário disponível
+            hora = st.time_input("Escolha um horário", horario_disponivel, step=3600)
+
+            hora_atual = str(datetime.now().replace(second=0, microsecond=0)).split()[1][:2]
+
+            if st.button('Agendar'):
+                if 7 <= int(str(hora)[:2]) <= 22 and int(hora_atual) <= int(str(hora)[:2]):
+                    resposta = requests.post(f'{API}/agendamentos/usuario/{st.session_state.id_usuario}/aquario/{lista2[lista1.index(aquario_ecolhido)]}',json={"agendamento": f"{dia.strftime('%d/%m/%Y')}-{int(str(hora)[:2])}_{int(str(hora)[:2])+1}"})
+                    if resposta.status_code == 200:
+                        st.success('agendamento realizado')
+                    else:
+                        st.error(resposta.json()['erro'])
+                else:
+                    st.error('horario invalido')
+
 def menu_predio():
     st.sidebar.title("Menu")
     escolha = st.sidebar.radio("Selecione o prédio", ["P1", "P2"])
@@ -71,16 +120,59 @@ def aquarios_admin():
 
         nome = st.text_input("Nome do aquario")
         local = st.text_input("Local do aquario Ex: P1, 2 andar")
-        foto = st.file_uploader("Foto do aquario")
 
         if st.button("Cadastrar"):
-            resposta = requests.post(f'{API}/usuarios', json={"nome": nome, "local": local, "foto": foto})
+            resposta = requests.post(f'{API}/aquarios', json={"nome": nome, "local": local})
             if resposta.status_code == 201:
-                st.success("Conta criada com sucesso!")
-                st.session_state.logado = True
-                st.experimental_rerun()
+                st.success("aquario criado com sucesso!")
             else:
                 st.error(resposta.json()['erro'])
+    
+    with tab2:
+        st.title('Selecione o aquario para editar')
+
+        resposta = requests.get(f'{API}/aquarios')
+        data = resposta.json()
+        if resposta.status_code == 200:
+            lista1 = []
+            lista2 = []
+            for aquario in data['aquarios']:
+                lista1.append(f'Nome: {aquario["nome"]}; Local: {aquario["local"]}')
+                lista2.append(aquario["_id"])
+            aquario_ecolhido = st.radio('Aquarios:',options=lista1, captions=lista2)
+
+            nome = st.text_input("Nome do aquario", aquario_ecolhido.split(';')[0])
+            local = st.text_input("Local do aquario Ex: P1, 2 andar", aquario_ecolhido.split(';')[1])
+
+            if st.button('Atualizar Aquario'):
+                resposta = requests.put(f'{API}/aquarios/{lista2[lista1.index(aquario_ecolhido)]}', json={"nome": nome, "local": local})
+                if resposta.status_code == 200:
+                    st.success('atualizado com sucesso')
+                    st.experimental_rerun()
+                else:
+                    st.error(resposta.json()['erro'])
+
+    with tab3:
+        st.title('Selecione o aquario para deletar')
+
+        resposta = requests.get(f'{API}/aquarios')
+        data = resposta.json()
+        if resposta.status_code == 200:
+            lista1 = []
+            lista2 = []
+            for aquario in data['aquarios']:
+                lista1.append(f'Nome: {aquario["nome"]}; Local: {aquario["local"]}')
+                lista2.append(aquario["_id"])
+            aquario_ecolhido = st.radio('Aquarios:',options=lista1, captions=lista2, key='radio_aquario_deletar')
+
+            if st.button('Deletar Aquario'):
+                resposta = requests.delete(f'{API}/aquarios/{lista2[lista1.index(aquario_ecolhido)]}')
+                if resposta.status_code == 200:
+                    st.success('deletado com sucesso')
+                    st.experimental_rerun()
+                else:
+                    st.error(resposta.json()['erro'])
+
 
 def menu_admin():
     st.sidebar.title("Menu")
