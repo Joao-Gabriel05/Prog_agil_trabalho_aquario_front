@@ -197,21 +197,21 @@ def verifica_agendamento():
     json = resposta.json()
 
     for aquario in json['aquarios']:
-        for agendamento in aquario['agendamentos']:
-            entrada_horario = agendamento['agendamento']
-        
-            data, hora = entrada_horario.split('-')
-            if data[:2] < data_atual[-1:-3]:
-                return True
-                
-            elif data[:2] == data_atual[-1:-3]:
-                hora_desejada = str(hora)[:2]
-                if int(hora_desejada) <= int(hora_atual):
-                    id = aquario["_id"]
-                    del aquario["_id"]
-                    aquario['agendamentos'].remove(agendamento)
-                    resposta = requests.put(f'{API}/aquarios/{id}', json=aquario)
-    return False
+        if 'agendamentos' in aquario:
+            for agendamento in aquario['agendamentos']:
+                entrada_horario = agendamento['agendamento']
+            
+                data, hora = entrada_horario.split('-')
+                if data[:2] < data_atual[-1:-3]:
+                    return True
+                    
+                elif data[:2] == data_atual[-1:-3]:
+                    hora_desejada = str(hora)[:2]
+                    if int(hora_desejada) <= int(hora_atual):
+                        id = aquario["_id"]
+                        del aquario["_id"]
+                        aquario['agendamentos'].remove(agendamento)
+                        resposta = requests.put(f'{API}/aquarios/{id}', json=aquario)
 
 
 def menu_admin():
