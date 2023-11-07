@@ -149,21 +149,22 @@ def listar_aquarios(predio):
             else:
                 agendamento_escolhido = st.radio('Agendamentos:',options=lista1, captions=lista2)
 
-            # if st.button("Deletar Agendamento"):
-            #     id_aquario = lista2[lista1.index(agendamento_escolhido)].split(';')[2][4:]
-            #     deletado = data['usuario']['agendamentos'][lista1.index(agendamento_escolhido)]
-            #     del data['usuario']['agendamentos'][lista1.index(agendamento_escolhido)]
-            #     del data['usuario']['_id']
-            #     if requests.put(f'{API}/usuarios/{st.session_state.id_usuario}', json=data).status_code == 200:
+            if st.button("Deletar Agendamento"):
+                id_aquario = lista2[lista1.index(agendamento_escolhido)].split(';')[2][4:]
+                st.write(id_aquario)
+                deletado = data['usuario']['agendamentos'][lista1.index(agendamento_escolhido)]
+                del data['usuario']['agendamentos'][lista1.index(agendamento_escolhido)]
+                del data['usuario']['_id']
+                if requests.put(f'{API}/usuarios/{st.session_state.id_usuario}', json=data).status_code == 200:
 
-            #         print('oi')
-            #         resposta = requests.get(f'{API}/aquarios/{id_aquario}')
-            #         if resposta.status_code == 200:
-            #             data = resposta.json()
-            #             data['aquario']['agendamentos'].remove(deletado)
-            #             del data['aquario']['_id']
-            #             if requests.put(f'{API}/aquarios/{id_aquario}', json=data).status_code == 200:
-            #                 st.success('deletado com sucesso')
+                    print('oi')
+                    resposta = requests.get(f'{API}/aquarios/{id_aquario}')
+                    if resposta.status_code == 200:
+                        data = resposta.json()
+                        data['aquario']['agendamentos'].remove(deletado)
+                        del data['aquario']['_id']
+                        if requests.put(f'{API}/aquarios/{id_aquario}', json=data).status_code == 200:
+                            st.success('deletado com sucesso')
 
 def menu_predio():
     st.sidebar.title("Menu")
@@ -185,6 +186,51 @@ def aquarios_admin():
                 st.success("aquario criado com sucesso!")
             else:
                 st.error(resposta.json()['erro'])
+
+    with tab2:
+        st.title('Selecione o aquario para editar')
+
+        resposta = requests.get(f'{API}/aquarios')
+        data = resposta.json()
+        if resposta.status_code == 200:
+            lista1 = []
+            lista2 = []
+            for aquario in data['aquarios']:
+                lista1.append(f'Nome: {aquario["nome"]}; Local: {aquario["local"]}')
+                lista2.append(aquario["_id"])
+            aquario_ecolhido = st.radio('Aquarios:',options=lista1, captions=lista2)
+
+            nome = st.text_input("Nome do aquario", aquario_ecolhido.split(';')[0])
+            local = st.text_input("Local do aquario Ex: P1, 2 andar", aquario_ecolhido.split(';')[1])
+
+            if st.button('Atualizar Aquario'):
+                resposta = requests.put(f'{API}/aquarios/{lista2[lista1.index(aquario_ecolhido)]}', json={"nome": nome, "local": local})
+                if resposta.status_code == 200:
+                    st.success('atualizado com sucesso')
+                    st.experimental_rerun()
+                else:
+                    st.error(resposta.json()['erro'])
+
+    with tab3:
+        st.title('Selecione o aquario para deletar')
+
+        resposta = requests.get(f'{API}/aquarios')
+        data = resposta.json()
+        if resposta.status_code == 200:
+            lista1 = []
+            lista2 = []
+            for aquario in data['aquarios']:
+                lista1.append(f'Nome: {aquario["nome"]}; Local: {aquario["local"]}')
+                lista2.append(aquario["_id"])
+            aquario_ecolhido = st.radio('Aquarios:',options=lista1, captions=lista2, key='radio_aquario_deletar')
+
+            if st.button('Deletar Aquario'):
+                resposta = requests.delete(f'{API}/aquarios/{lista2[lista1.index(aquario_ecolhido)]}')
+                if resposta.status_code == 200:
+                    st.success('deletado com sucesso')
+                    st.experimental_rerun()
+                else:
+                    st.error(resposta.json()['erro'])
 
 def verifica_agendamento():
 
