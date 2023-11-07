@@ -149,7 +149,7 @@ def listar_aquarios(predio):
 
             if st.button("Deletar Agendamento"):
                 id_aquario = lista2[lista1.index(agendamento_escolhido)].split(';')[2][4:]
-                resposta = requests.delete(f'{API}/agendamentos/usuarios/{st.session_state.id_usuario}/aquarios/{id_aquario}', json=data)
+                resposta = requests.delete(f'{API}/agendamentos/usuario/{st.session_state.id_usuario}/aquario/{id_aquario}', json=data)
                 if resposta.status_code == 200:
                     st.success('deletado com sucesso')
                     st.experimental_rerun()
