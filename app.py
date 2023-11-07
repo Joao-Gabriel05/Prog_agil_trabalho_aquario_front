@@ -40,6 +40,27 @@ def cadastro():
             st.experimental_rerun()
         else:
             st.error(resposta.json()['erro'])
+
+def tela_edicao():
+    st.title("Editar Cadastro")
+
+    usuario_atual = st.session_state.usuario_atual
+
+    nome_completo = st.text_input("Nome Completo", value=usuario_atual.get('nome', ''))
+    novo_email = st.text_input("Email", value=usuario_atual.get('email', ''))
+    nova_senha = st.text_input("Nova Senha", type="password")
+
+    if st.button("Salvar Alterações"):
+        dados_usuario = {"nome": nome_completo, "email": novo_email, "senha": nova_senha}
+        resposta = requests.put(f'{API}/usuarios/{usuario_atual["id"]}', json=dados_usuario)
+
+        if resposta.status_code == 200:
+            st.success("Cadastro atualizado com sucesso!")
+            st.experimental_rerun()
+        else:
+            st.error(resposta.json().get('erro', 'Erro desconhecido'))
+
+
         
 def menu_login_cadastro():
     st.sidebar.title("Menu")
@@ -127,51 +148,21 @@ def aquarios_admin():
                 st.success("aquario criado com sucesso!")
             else:
                 st.error(resposta.json()['erro'])
-    
-    with tab2:
-        st.title('Selecione o aquario para editar')
 
-        resposta = requests.get(f'{API}/aquarios')
-        data = resposta.json()
-        if resposta.status_code == 200:
-            lista1 = []
-            lista2 = []
-            for aquario in data['aquarios']:
-                lista1.append(f'Nome: {aquario["nome"]}; Local: {aquario["local"]}')
-                lista2.append(aquario["_id"])
-            aquario_ecolhido = st.radio('Aquarios:',options=lista1, captions=lista2)
-
-            nome = st.text_input("Nome do aquario", aquario_ecolhido.split(';')[0])
-            local = st.text_input("Local do aquario Ex: P1, 2 andar", aquario_ecolhido.split(';')[1])
-
-            if st.button('Atualizar Aquario'):
-                resposta = requests.put(f'{API}/aquarios/{lista2[lista1.index(aquario_ecolhido)]}', json={"nome": nome, "local": local})
-                if resposta.status_code == 200:
-                    st.success('atualizado com sucesso')
-                    st.experimental_rerun()
-                else:
-                    st.error(resposta.json()['erro'])
-
-    with tab3:
-        st.title('Selecione o aquario para deletar')
-
-        resposta = requests.get(f'{API}/aquarios')
-        data = resposta.json()
-        if resposta.status_code == 200:
-            lista1 = []
-            lista2 = []
-            for aquario in data['aquarios']:
-                lista1.append(f'Nome: {aquario["nome"]}; Local: {aquario["local"]}')
-                lista2.append(aquario["_id"])
-            aquario_ecolhido = st.radio('Aquarios:',options=lista1, captions=lista2, key='radio_aquario_deletar')
-
-            if st.button('Deletar Aquario'):
-                resposta = requests.delete(f'{API}/aquarios/{lista2[lista1.index(aquario_ecolhido)]}')
-                if resposta.status_code == 200:
-                    st.success('deletado com sucesso')
-                    st.experimental_rerun()
-                else:
-                    st.error(resposta.json()['erro'])
+def verifica_agendamento(entrada_horario):
+        
+    data, hora = entrada_horario.split('-')
+    data_desejada = datetime.strptime(data, "%d/%m/%Y").date()
+    data_atual = datetime.now().date()
+    if data_desejada < data_atual:
+        return True
+        
+    elif data_desejada == data_atual:
+        hora_desejada = datetime.strptime(hora, "%H_%M").time()
+        hora_atual = datetime.now().time()
+        if hora_desejada <= hora_atual:
+            return True
+    return False
 
 
 def menu_admin():
