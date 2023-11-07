@@ -17,7 +17,7 @@ def login():
             if email == "admin@admin":
                 st.session_state.admin = True
             st.success("Login bem-sucedido!")
-            verifica_agendamento()
+            requests.get(f'{API}/verifica_agendamentos')
             st.session_state.id_usuario = resposta.json()['sucesso']
             st.session_state.logado = True
             st.experimental_rerun()
@@ -150,22 +150,14 @@ def listar_aquarios(predio):
             else:
                 agendamento_escolhido = st.radio('Agendamentos:',options=lista1, captions=lista2)
 
-            # if st.button("Deletar Agendamento"):
-            #     id_aquario = lista2[lista1.index(agendamento_escolhido)].split(';')[2][4:]
-            #     st.write(id_aquario)
-            #     deletado = data['usuario']['agendamentos'][lista1.index(agendamento_escolhido)]
-            #     del data['usuario']['agendamentos'][lista1.index(agendamento_escolhido)]
-            #     del data['usuario']['_id']
-            #     if requests.put(f'{API}/usuarios/{st.session_state.id_usuario}', json=data).status_code == 200:
+            if st.button("Deletar Agendamento"):
+                id_aquario = lista2[lista1.index(agendamento_escolhido)].split(';')[2][4:]
+                resposta = requests.delete(f'{API}/agendamentos/usuarios/{st.session_state.id_usuario}/aquario/{id_aquario}', json=data)
+                if resposta.status_code == 200:
+                    st.success('deletado com sucesso')
+                else:
+                    st.error(resposta.json()['erro'])
 
-            #         print('oi')
-            #         resposta = requests.get(f'{API}/aquarios/{id_aquario}')
-            #         if resposta.status_code == 200:
-            #             data = resposta.json()
-            #             data['aquario']['agendamentos'].remove(deletado)
-            #             del data['aquario']['_id']
-            #             if requests.put(f'{API}/aquarios/{id_aquario}', json=data).status_code == 200:
-            #                 st.success('deletado com sucesso')
 
 def menu_predio():
     st.sidebar.title("Menu")
@@ -233,33 +225,6 @@ def aquarios_admin():
                     st.experimental_rerun()
                 else:
                     st.error(resposta.json()['erro'])
-
-def verifica_agendamento():
-
-    agora = datetime.now().replace(second=0, microsecond=0)
-
-    data_atual = str(agora).split()[0]
-    hora_atual = str(agora).split()[1][:2]
-
-    resposta = requests.get(f'{API}/aquarios')
-    json = resposta.json()
-
-    for aquario in json['aquarios']:
-        if 'agendamentos' in aquario:
-            for agendamento in aquario['agendamentos']:
-                entrada_horario = agendamento['agendamento']
-            
-                data, hora = entrada_horario.split('-')
-                if data[:2] < data_atual[-1:-3]:
-                    return True
-                    
-                elif data[:2] == data_atual[-1:-3]:
-                    hora_desejada = str(hora)[:2]
-                    if int(hora_desejada) <= int(hora_atual):
-                        id = aquario["_id"]
-                        del aquario["_id"]
-                        aquario['agendamentos'].remove(agendamento)
-                        resposta = requests.put(f'{API}/aquarios/{id}', json=aquario)
 
 
 def menu_admin():
