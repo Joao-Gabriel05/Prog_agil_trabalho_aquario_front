@@ -123,14 +123,11 @@ def listar_aquarios(predio):
                 hora_atual = str(datetime.now().replace(second=0, microsecond=0)).split()[1][:2]
 
                 if st.button('Agendar'):
-                    if 7 <= int(str(hora)[:2]) <= 22 and int(hora_atual) <= int(str(hora)[:2]) and int(str(hora)[:2]) not in horarios_ocupados:
-                        resposta = requests.post(f'{API}/agendamentos/usuario/{st.session_state.id_usuario}/aquario/{lista2[lista1.index(aquario_ecolhido)]}',json={"agendamento": f"{dia.strftime('%d/%m/%Y')}-{int(str(hora)[:2])}_{int(str(hora)[:2])+1}"})
-                        if resposta.status_code == 200:
-                            st.success('agendamento realizado')
-                        else:
-                            st.error(resposta.json()['erro'])
+                    resposta = requests.post(f'{API}/agendamentos/usuario/{st.session_state.id_usuario}/aquario/{lista2[lista1.index(aquario_ecolhido)]}',json={"agendamento": f"{dia.strftime('%d/%m/%Y')}-{int(str(hora)[:2])}_{int(str(hora)[:2])+1}"})
+                    if resposta.status_code == 200:
+                        st.success('agendamento realizado')
                     else:
-                        st.error('horario invalido')
+                            st.error(resposta.json()['erro'])
 
     with tab2:
         st.title('Meus Agendamentos')
@@ -155,6 +152,7 @@ def listar_aquarios(predio):
                 resposta = requests.delete(f'{API}/agendamentos/usuarios/{st.session_state.id_usuario}/aquario/{id_aquario}', json=data)
                 if resposta.status_code == 200:
                     st.success('deletado com sucesso')
+                    st.experimental_rerun()
                 else:
                     st.error(resposta.json()['erro'])
 
