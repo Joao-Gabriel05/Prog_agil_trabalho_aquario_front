@@ -201,8 +201,9 @@ def aquarios_admin():
                 lista2.append(aquario["_id"])
             aquario_ecolhido = st.radio('Aquarios:',options=lista1, captions=lista2)
 
-            nome = st.text_input("Nome do aquario", aquario_ecolhido.split(';')[0])
-            local = st.text_input("Local do aquario Ex: P1, 2 andar", aquario_ecolhido.split(';')[1])
+            if aquario_ecolhido:
+                nome = st.text_input("Nome do aquario", aquario_ecolhido.split(';')[0])
+                local = st.text_input("Local do aquario Ex: P1, 2 andar", aquario_ecolhido.split(';')[1])
 
             if st.button('Atualizar Aquario'):
                 resposta = requests.put(f'{API}/aquarios/{lista2[lista1.index(aquario_ecolhido)]}', json={"nome": nome, "local": local})
