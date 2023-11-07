@@ -25,3 +25,11 @@ def hora_disponivel(horarios_ocupados):
         if hora not in horarios_ocupados and hora > hora_atual:
             return hora.time()
         hora += intervalo
+
+
+agora = datetime.now().replace(second=0, microsecond=0)
+
+data_atual = str(agora).split()[0]
+hora_atual = str(agora).split()[1][:2]
+
+print(data_atual, hora_atual)

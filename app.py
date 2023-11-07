@@ -17,6 +17,7 @@ def login():
             if email == "admin@admin":
                 st.session_state.admin = True
             st.success("Login bem-sucedido!")
+            verifica_agendamento()
             st.session_state.id_usuario = resposta.json()['sucesso']
             st.session_state.logado = True
             st.experimental_rerun()
@@ -72,61 +73,82 @@ def menu_login_cadastro():
         cadastro()
 
 def listar_aquarios(predio):
-    st.title('Selecione o aquario para agendar')
+    tab1, tab2 = st.tabs(['Agendar', 'Meus Agendamentos'])
+    
+    with tab1:
+        st.title('Selecione o aquario para agendar')
 
-    resposta = requests.get(f'{API}/aquarios')
-    data = resposta.json()
-    if resposta.status_code == 200:
-        lista1 = []
-        lista2 = []
-        for aquario in data['aquarios']:
-            if predio in aquario['local']:
-                lista1.append(f'Nome: {aquario["nome"]}; Local: {aquario["local"]}')
-                lista2.append(aquario["_id"])
+        resposta = requests.get(f'{API}/aquarios')
+        data = resposta.json()
+        if resposta.status_code == 200:
+            lista1 = []
+            lista2 = []
+            for aquario in data['aquarios']:
+                if predio in aquario['local']:
+                    lista1.append(f'Nome: {aquario["nome"]}; Local: {aquario["local"]}')
+                    lista2.append(aquario["_id"])
 
-        if not lista1:
-            st.write('sem aquarios disponiveis')
-        else:
-            aquario_ecolhido = st.radio('Aquarios:',options=lista1, captions=lista2)
+            if not lista1:
+                st.write('sem aquarios disponiveis')
+            else:
+                aquario_ecolhido = st.radio('Aquarios:',options=lista1, captions=lista2)
 
-            # Obtendo a data atual
-            data_atual = datetime.now().date()
+                # Obtendo a data atual
+                data_atual = datetime.now().date()
 
-            # Encontrando o próximo dia útil após dois dias a partir da data atual
-            data_dia_util = proximo_dia_util(data_atual)
+                # Encontrando o próximo dia útil após dois dias a partir da data atual
+                data_dia_util = proximo_dia_util(data_atual)
 
-            # Widget para seleção de data a partir do dia útil encontrado
-            dia = st.date_input("Selecione uma data", min_value=data_atual, max_value=data_dia_util)
+                # Widget para seleção de data a partir do dia útil encontrado
+                dia = st.date_input("Selecione uma data", min_value=data_atual, max_value=data_dia_util)
 
-            resposta = requests.get(f'{API}/aquarios/{lista2[lista1.index(aquario_ecolhido)]}')
-            json = resposta.json()
+                resposta = requests.get(f'{API}/aquarios/{lista2[lista1.index(aquario_ecolhido)]}')
+                json = resposta.json()
 
-            horarios_ocupados = []
+                horarios_ocupados = []
 
-            if 'agendamentos' in json['aquario']:
-                for agendamento in json['aquario']['agendamentos']:
-                    horarios_ocupados.append(datetime.strptime(f"{agendamento.split('-')[1][:2]}:00", "%H:%M").time())
+                if 'agendamentos' in json['aquario']:
+                    for agendamento in json['aquario']['agendamentos']:
+                        horarios_ocupados.append(int(agendamento['agendamento'].split('-')[1][:1]))
 
-                # Horários já ocupados (simulados para o exemplo)
-                # horarios_ocupados = [datetime.strptime("13:00", "%H:%M").time(), datetime.strptime("16:30", "%H:%M").time()]
+                    # Horários já ocupados (simulados para o exemplo)
+                    # horarios_ocupados = [datetime.strptime("13:00", "%H:%M").time(), datetime.strptime("16:30", "%H:%M").time()]
 
-            # Obtendo o próximo horário disponível
-            horario_disponivel = hora_disponivel(horarios_ocupados)
+                # Obtendo o próximo horário disponível
+                horario_disponivel = hora_disponivel(horarios_ocupados)
 
-            # Widget para seleção de horário a partir do próximo horário disponível
-            hora = st.time_input("Escolha um horário", horario_disponivel, step=3600)
+                # Widget para seleção de horário a partir do próximo horário disponível
+                hora = st.time_input("Escolha um horário", horario_disponivel, step=3600)
 
-            hora_atual = str(datetime.now().replace(second=0, microsecond=0)).split()[1][:2]
+                hora_atual = str(datetime.now().replace(second=0, microsecond=0)).split()[1][:2]
 
-            if st.button('Agendar'):
-                if 7 <= int(str(hora)[:2]) <= 22 and int(hora_atual) <= int(str(hora)[:2]):
-                    resposta = requests.post(f'{API}/agendamentos/usuario/{st.session_state.id_usuario}/aquario/{lista2[lista1.index(aquario_ecolhido)]}',json={"agendamento": f"{dia.strftime('%d/%m/%Y')}-{int(str(hora)[:2])}_{int(str(hora)[:2])+1}"})
-                    if resposta.status_code == 200:
-                        st.success('agendamento realizado')
+                if st.button('Agendar'):
+                    if 7 <= int(str(hora)[:2]) <= 22 and int(hora_atual) <= int(str(hora)[:2]) and int(str(hora)[:2]) not in horarios_ocupados:
+                        resposta = requests.post(f'{API}/agendamentos/usuario/{st.session_state.id_usuario}/aquario/{lista2[lista1.index(aquario_ecolhido)]}',json={"agendamento": f"{dia.strftime('%d/%m/%Y')}-{int(str(hora)[:2])}_{int(str(hora)[:2])+1}"})
+                        if resposta.status_code == 200:
+                            st.success('agendamento realizado')
+                        else:
+                            st.error(resposta.json()['erro'])
                     else:
-                        st.error(resposta.json()['erro'])
-                else:
-                    st.error('horario invalido')
+                        st.error('horario invalido')
+
+    with tab2:
+        st.title('Selecione um agendamento caso queira deleta-lo')
+        
+        resposta = requests.get(f'{API}/aquarios')
+        data = resposta.json()
+        if resposta.status_code == 200:
+            lista1 = []
+            lista2 = []
+            for aquario in data['aquarios']:
+                if predio in aquario['local']:
+                    lista1.append(f'Nome: {aquario["nome"]}; Local: {aquario["local"]}')
+                    lista2.append(aquario["_id"])
+
+            if not lista1:
+                st.write('sem aquarios disponiveis')
+            else:
+                aquario_ecolhido = st.radio('Aquarios:',options=lista1, captions=lista2)
 
 def menu_predio():
     st.sidebar.title("Menu")
@@ -149,19 +171,32 @@ def aquarios_admin():
             else:
                 st.error(resposta.json()['erro'])
 
-def verifica_agendamento(entrada_horario):
+def verifica_agendamento():
+
+    agora = datetime.now().replace(second=0, microsecond=0)
+
+    data_atual = str(agora).split()[0]
+    hora_atual = str(agora).split()[1][:2]
+
+    resposta = requests.get(f'{API}/aquarios')
+    json = resposta.json()
+
+    for aquario in json['aquarios']:
+        for agendamento in aquario['agendamentos']:
+            entrada_horario = agendamento['agendamento']
         
-    data, hora = entrada_horario.split('-')
-    data_desejada = datetime.strptime(data, "%d/%m/%Y").date()
-    data_atual = datetime.now().date()
-    if data_desejada < data_atual:
-        return True
-        
-    elif data_desejada == data_atual:
-        hora_desejada = datetime.strptime(hora, "%H_%M").time()
-        hora_atual = datetime.now().time()
-        if hora_desejada <= hora_atual:
-            return True
+            data, hora = entrada_horario.split('-')
+            data_desejada = datetime.strptime(data, "%d/%m/%Y").date()
+            if data_desejada < datetime.strptime(data_atual,"%d/%m/%Y").date():
+                return True
+                
+            elif data_desejada == datetime.strptime(data_atual,"%d/%m/%Y").date():
+                hora_desejada = str(hora)[:2]
+                if int(hora_desejada) <= int(hora_atual):
+                    id = aquario["_id"]
+                    del aquario["_id"]
+                    aquario['agendamentos'].remove(agendamento)
+                    resposta = requests.put(f'{API}/aquarios/{id}', json=aquario)
     return False
 
 
